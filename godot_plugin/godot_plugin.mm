@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 
 #import "godot_plugin.h"
-#import "godot_plugin_implementation.h"
+#import "godot_plugin_class.h"
 
 #import "core/engine.h"
 

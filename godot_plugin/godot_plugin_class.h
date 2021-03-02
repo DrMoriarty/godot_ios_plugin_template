@@ -6,8 +6,7 @@
 //  Copyright © 2020 Godot. All rights reserved.
 //
 
-#ifndef godot_plugin_implementation_h
-#define godot_plugin_implementation_h
+#pragma once
 
 #include "core/object.h"
 
@@ -18,10 +17,10 @@ class PluginExample : public Object {
     
 public:
     
-    Error foo();
+    void input_method(String arg1, Dictionary arg2);
+    Dictionary output_method();
     
     PluginExample();
     ~PluginExample();
 };
 
-#endif /* godot_plugin_implementation_h */

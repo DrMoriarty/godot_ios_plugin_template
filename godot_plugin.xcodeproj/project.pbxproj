@@ -7,8 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		515DBA0925EE9E1E00187A4B /* SwiftClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 515DBA0825EE9E1E00187A4B /* SwiftClass.swift */; };
 		90CAAA9924E71FF10013969F /* godot_plugin.mm in Sources */ = {isa = PBXBuildFile; fileRef = 90CAAA9824E71FF10013969F /* godot_plugin.mm */; };
-		90CAAAA424E724C50013969F /* godot_plugin_implementation.mm in Sources */ = {isa = PBXBuildFile; fileRef = 90CAAAA324E724C50013969F /* godot_plugin_implementation.mm */; };
+		90CAAAA424E724C50013969F /* godot_plugin_class.mm in Sources */ = {isa = PBXBuildFile; fileRef = 90CAAAA324E724C50013969F /* godot_plugin_class.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,11 +25,13 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		515DBA0725EE9E1D00187A4B /* godot_plugin-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "godot_plugin-Bridging-Header.h"; sourceTree = "<group>"; };
+		515DBA0825EE9E1E00187A4B /* SwiftClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftClass.swift; sourceTree = "<group>"; };
 		90CAAA9424E71FF10013969F /* libgodot_plugin.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libgodot_plugin.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		90CAAA9724E71FF10013969F /* godot_plugin.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = godot_plugin.h; sourceTree = "<group>"; };
 		90CAAA9824E71FF10013969F /* godot_plugin.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = godot_plugin.mm; sourceTree = "<group>"; };
-		90CAAAA324E724C50013969F /* godot_plugin_implementation.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = godot_plugin_implementation.mm; sourceTree = "<group>"; };
-		90CAAAA524E724D00013969F /* godot_plugin_implementation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = godot_plugin_implementation.h; sourceTree = "<group>"; };
+		90CAAAA324E724C50013969F /* godot_plugin_class.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = godot_plugin_class.mm; sourceTree = "<group>"; };
+		90CAAAA524E724D00013969F /* godot_plugin_class.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = godot_plugin_class.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,8 +67,10 @@
 			children = (
 				90CAAA9724E71FF10013969F /* godot_plugin.h */,
 				90CAAA9824E71FF10013969F /* godot_plugin.mm */,
-				90CAAAA524E724D00013969F /* godot_plugin_implementation.h */,
-				90CAAAA324E724C50013969F /* godot_plugin_implementation.mm */,
+				90CAAAA524E724D00013969F /* godot_plugin_class.h */,
+				90CAAAA324E724C50013969F /* godot_plugin_class.mm */,
+				515DBA0825EE9E1E00187A4B /* SwiftClass.swift */,
+				515DBA0725EE9E1D00187A4B /* godot_plugin-Bridging-Header.h */,
 			);
 			path = godot_plugin;
 			sourceTree = "<group>";
@@ -108,6 +113,7 @@
 				TargetAttributes = {
 					90CAAA9324E71FF10013969F = {
 						CreatedOnToolsVersion = 11.6;
+						LastSwiftMigration = 1230;
 					};
 				};
 			};
@@ -134,7 +140,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				90CAAAA424E724C50013969F /* godot_plugin_implementation.mm in Sources */,
+				90CAAAA424E724C50013969F /* godot_plugin_class.mm in Sources */,
+				515DBA0925EE9E1E00187A4B /* SwiftClass.swift in Sources */,
 				90CAAA9924E71FF10013969F /* godot_plugin.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -258,16 +265,12 @@
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/godot",
-					"$(SRCROOT)/godot/main",
-					"$(SRCROOT)/godot/core",
-					"$(SRCROOT)/godot/core/os",
-					"$(SRCROOT)/godot/servers",
-					"$(SRCROOT)/godot/platform",
 					"$(SRCROOT)/godot/platform/iphone",
-					"$(SRCROOT)/godot/modules",
-					"$(SRCROOT)/godot/scene",
-					"$(SRCROOT)/godot/drivers",
-					"$(SRCROOT)/godot/trirdparty",
+				);
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
@@ -287,6 +290,9 @@
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "godot_plugin/godot_plugin-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -297,16 +303,12 @@
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/godot",
-					"$(SRCROOT)/godot/main",
-					"$(SRCROOT)/godot/core",
-					"$(SRCROOT)/godot/core/os",
-					"$(SRCROOT)/godot/servers",
-					"$(SRCROOT)/godot/platform",
 					"$(SRCROOT)/godot/platform/iphone",
-					"$(SRCROOT)/godot/modules",
-					"$(SRCROOT)/godot/scene",
-					"$(SRCROOT)/godot/drivers",
-					"$(SRCROOT)/godot/trirdparty",
+				);
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
@@ -320,6 +322,8 @@
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "godot_plugin/godot_plugin-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
