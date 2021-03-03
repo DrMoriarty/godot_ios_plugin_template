@@ -1,5 +1,5 @@
 [config]
-name="PluginExample"
+name="PluginTemplate"
 binary="godot_plugin.a"
 
 initialization="godot_plugin_init"
