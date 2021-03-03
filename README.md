@@ -21,6 +21,8 @@ Add new methods to `godot_plugin/godot_plugin_class.h` and write their implement
 
 In file `SwiftClass.swift` you can find the place for your Swift code. Then you can call it's methods from C++ glue class.
 
+After adding new methods don't forget to make them available for Godot. Open file `godot_plugin/godot_plugin_class.mm` find method `PluginExample::_bind_methods` and add new method declarations (use two existing methods as reference).
+
 # Rename plugin template
 
 In order to use several plugins at one time there are necessary that all of them have unique names. So you should rename `plugin_template` to something more suitable.
