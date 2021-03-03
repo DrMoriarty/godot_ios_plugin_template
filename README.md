@@ -67,6 +67,8 @@ It will make two libraries in `bin` folder: `godot_plugin.debug.a` and `godot_pl
 
 After building you could pack your plugin with `nativelib -P .` runned in template folder.
 
+If you don't have NativeLib just grab it from [this](https://github.com/DrMoriarty/nativelib-cli)
+
 # Plugin publishing
 
 You can use your plugin from your local repo after completing the previous step. But if you want to share your work with other people you should make additional steps.
