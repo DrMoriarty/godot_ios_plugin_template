@@ -1,0 +1,22 @@
+{
+  "name": "ios-plugin-template",
+  "display_name": "Plugin Template",
+  "description": "Very useful plugin",
+  "version": "1.0.0",
+  "license": "MIT",
+  "url": "https://github.com/DrMoriarty/godot_ios_plugin_template",
+  "category": "misc",
+  "godot_version": "3.2.4",
+  "author": {
+    "name": "Plugin Author",
+    "url": "https://godotengine.org",
+    "donate": "Url to your donate page, or remove if not needed"
+  },
+  "platform_ios": {
+    "files": {
+      "bin/godot_plugin.debug.a": "ios/plugins/ios_plugin_template/",
+      "bin/godot_plugin.release.a": "ios/plugins/ios_plugin_template/",
+      "plugin_example.gdip": "ios/plugins/ios_plugin_template/"
+    }
+  }
+}
