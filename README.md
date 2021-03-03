@@ -1,19 +1,28 @@
 # Godot iOS Plugin template
 
-This repo contains a *starter* Xcode and SCons configuration to build Godot plugin for iOS.
-Xcode project and Scons configuration allows to build static `.a` library, that could be used with `.gdip` file as Godot's plugin to include platform functionality into exported application.
+This repo contains a *starter* Xcode configuration to build Godot plugin for iOS and publish it in NativeLib repo.
+Xcode project allows to build static `.a` libraries, that could be used with `.gdip` file as Godot's plugin to include platform functionality into exported application.
 
 # Initial setup
 
 ## Getting Godot engine headers
 
-To build iOS plugin library it's required to have Godot's header files including generated ones. So running `scons platform=iphone target=<release|debug|release_debug>` in `godot` submodule folder is required.
+To build iOS plugin library it's required to have Godot's header files including generated ones. 
 
-# Working with Xcode
+If you want to use cloned godot repo than run `git submodule init; git submodule update`. After that run `scons platform=iphone target=<release|debug|release_debug>` in `godot` submodule folder.
 
-Building project should be enough to build a `.a` library that could be used with `.gdip` file.
+Or you can just copy your local godot repo into `godot` folder.
 
-# Working with SCons
+# Plugin building
 
-Running `scons platform=ios arch=<arch> target=<release|debug|release_debug> target_name=<library_name> version=<3.2|4.0>` would result in plugin library for specific platform.
-Compiling for multiple archs and using `lipo -create .. -output ..` might be required for release builds.
+When making changes in template you could build it in Xcode and check that all ok. When you are ready to make final build exit from Xcode and run `./generate_static_library.sh` in plugin template folder.
+
+It will make two libraries in `bin` folder: `godot_plugin.debug.a` and `godot_plugin.release.a`. Actually they both are release but one of them uses debug godot interface and will work with debug export.
+
+After building you could pack your plugin with `nativelib -P .` runned in template folder.
+
+# Plugin publishing
+
+You can use your plugin from your local repo after completing the previous step. But if you want to share your work with other people you should make additional steps.
+
+At first make new github repo. Copy, commit and push all files from the template folder to this new repository. Then check that you have installed [gh](https://github.com/cli/cli). 
