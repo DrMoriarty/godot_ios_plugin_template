@@ -5,13 +5,7 @@ Xcode project allows to build static `.a` libraries, that could be used with `.g
 
 # Initial setup
 
-## Getting Godot engine headers
-
-To build iOS plugin library it's required to have Godot's header files including generated ones. 
-
-If you want to use cloned godot repo than run `git submodule init; git submodule update`. After that run `scons platform=iphone target=<release|debug|release_debug>` in `godot` submodule folder.
-
-Or you can just copy your local godot repo into `godot` folder.
+In common case you should not clone or fork this repository. Just download [https://github.com/DrMoriarty/godot_ios_plugin_template/archive/master.zip](https://github.com/DrMoriarty/godot_ios_plugin_template/archive/master.zip) and you can start code.
 
 # Add some useful code
 
