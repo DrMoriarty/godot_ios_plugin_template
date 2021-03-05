@@ -45,8 +45,8 @@ In file `nativelib.json` there are more changes. I will show you final variant:
   },
   "platform_ios": {
     "files": {
-      "bin/godot_plugin.debug.a": "ios/plugins/foo_bar135/foo_bar135.debug.a",
-      "bin/godot_plugin.release.a": "ios/plugins/foo_bar135/foo_bar135.release.a",
+      "bin/godot_plugin.debug.xcframework": "ios/plugins/foo_bar135/foo_bar135.debug.xcframework",
+      "bin/godot_plugin.release.xcframework": "ios/plugins/foo_bar135/foo_bar135.release.xcframework",
       "plugin_template.gdip": "ios/plugins/foo_bar135/foo_bar135.gdip"
     }
   }

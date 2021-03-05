@@ -1,6 +1,6 @@
 [config]
 name="PluginTemplate"
-binary="godot_plugin.a"
+binary="godot_plugin.xcframework"
 
 initialization="godot_plugin_init"
 deinitialization="godot_plugin_deinit"

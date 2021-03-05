@@ -14,9 +14,9 @@
   },
   "platform_ios": {
     "files": {
-      "bin/godot_plugin.debug.a": "ios/plugins/ios_plugin_template/godot_plugin.debug.a",
-      "bin/godot_plugin.release.a": "ios/plugins/ios_plugin_template/godot_plugin.release.a",
-      "plugin_template.gdip": "ios/plugins/ios_plugin_template/"
+      "bin/godot_plugin.debug.xcframework": "ios/plugins/ios_plugin_template/godot_plugin.debug.xcframework",
+      "bin/godot_plugin.release.xcframework": "ios/plugins/ios_plugin_template/godot_plugin.release.xcframework",
+      "plugin_template.gdip": "ios/plugins/ios_plugin_template/plugin_template.gdip"
     }
   }
 }
