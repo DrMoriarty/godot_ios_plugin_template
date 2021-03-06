@@ -87,9 +87,9 @@ In file `nativelib.json` there are more changes. I will show you final variant:
 
 When making changes in template you could build it in Xcode and check that all ok. When you are ready to make final build exit from Xcode and run `./generate_static_library.sh` in plugin template folder.
 
-It will make two libraries in `bin` folder: `godot_plugin.debug.a` and `godot_plugin.release.a`. Actually they both are release but one of them uses debug godot interface and will work with debug export.
+It will make two libraries in `bin` folder: `godot_plugin.debug.xcframework` and `godot_plugin.release.xcframework`. Actually they both are release but one of them uses debug godot interface and will work with debug export.
 
-After building you could pack your plugin with `nativelib -P .` runned in template folder.
+After building you could pack your plugin with `nativelib -P .` runned in the plugin's folder.
 
 If you don't have NativeLib just grab it from [this](https://github.com/DrMoriarty/nativelib-cli)
 
