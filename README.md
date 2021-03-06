@@ -17,6 +17,36 @@ In file `SwiftClass.swift` you can find the place for your Swift code. Then you 
 
 After adding new methods don't forget to make them available for Godot. Open file `godot_plugin/godot_plugin_class.mm` find method `PluginExample::_bind_methods` and add new method declarations (use two existing methods as reference).
 
+## Example
+
+For example lets add function something_useful with one string input argument in plugin.
+
+Add this to `godot_plugin_class.h`:
+```
+void something_useful(String arg1);
+```
+
+It should be in public area (after input_method and output_method). Then add this to the end of `godot_plugin_class.cpp`:
+```
+    void PluginExample::something_useful(String arg1) {
+        [SwiftClass somethingUsefulWithStr:to_nsstring(arg1)];
+    }
+```
+
+Also you should add this string to method `_bind_methods()` in order to let godot find this method:
+```
+    ClassDB::bind_method(D_METHOD("something_useful"), &PluginExample::something_useful);
+```
+
+Then go to `SwiftClass.swift` and write the body of method:
+```
+    static func somethingUseful(str: String) {
+        print("This is useful: " + str)
+    }
+```
+
+Voila! Now you can call it with `pe.something_useful("anystring")`
+
 # Rename plugin template
 
 In order to use several plugins at one time there are necessary that all of them have unique names. So you should rename `plugin_template` to something more suitable.
@@ -62,6 +92,20 @@ It will make two libraries in `bin` folder: `godot_plugin.debug.a` and `godot_pl
 After building you could pack your plugin with `nativelib -P .` runned in template folder.
 
 If you don't have NativeLib just grab it from [this](https://github.com/DrMoriarty/nativelib-cli)
+
+# Test plugin
+
+If you skipped renaming plugin stage you can use this code to test your plugin (actually I use it myself for testing the template):
+```
+    if Engine.has_singleton('PluginExample'):
+        print('PluginExample found')
+        var pe = Engine.get_singleton('PluginExample')
+        pe.input_method('World', {'none': 'there'})
+        print(var2str(pe.output_method()))
+    else:
+        print('No PluginExample!')
+```
+If you already changed plugin name and public methods so make additional changes in this test code.
 
 # Plugin publishing
 
