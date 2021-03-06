@@ -26,7 +26,7 @@ Add this to `godot_plugin_class.h`:
 void something_useful(String arg1);
 ```
 
-It should be in public area (after input_method and output_method). Then add this to the end of `godot_plugin_class.cpp`:
+It should be in public area (after input_method and output_method). Then add this to the end of `godot_plugin_class.mm`:
 ```
     void PluginExample::something_useful(String arg1) {
         [SwiftClass somethingUsefulWithStr:to_nsstring(arg1)];
