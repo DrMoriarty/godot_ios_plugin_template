@@ -1,0 +1,201 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
+import sys, os, json
+if sys.version_info[0] >= 3:
+    import pathlib
+else:
+    reload(sys)
+    sys.setdefaultencoding('utf8')
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    GRAY = '\033[90m'
+
+#################################
+#
+# Utilities
+#
+
+def print_error(e):
+    print('{0}{2}{1}'.format(bcolors.FAIL, bcolors.ENDC, e))
+
+def print_warning(w):
+    print('{0}{2}{1}'.format(bcolors.WARNING, bcolors.ENDC, w))
+
+def print_bold(s):
+    print('{0}{2}{1}'.format(bcolors.BOLD, bcolors.ENDC, s))
+
+def print_debug(s):
+    print('{0}{2}{1}'.format(bcolors.GRAY, bcolors.ENDC, s))
+
+def print_green(s):
+    print('{0}{2}{1}'.format(bcolors.OKGREEN, bcolors.ENDC, s))
+
+def print_blue(s):
+    print('{0}{2}{1}'.format(bcolors.OKBLUE, bcolors.ENDC, s))
+
+def file_text(filepath):
+    if sys.version_info[0] >= 3:
+        return pathlib.Path(filepath).read_text()
+    else:
+        with open(filepath, 'r') as f:
+            return f.read()
+
+def validate_unacceptable_symbols(m, valids):
+    if not m is None and type(m) == str:
+        for l in m:
+            if valids.find(l) < 0:
+                print_error('Plugin name should not contain symbol "{}"'.format(l))
+                return 1
+    return 0
+
+def replace_template(filename, template, value):
+    try:
+        pr_str = file_text(filename)
+        pr_str = pr_str.replace(template, value)
+        with open(filename, 'w') as f:
+            f.write(pr_str)
+    except IOError as e:
+        print_error(e)
+
+def set_plugin_name():
+    print_bold('Enter new plugin name (use only letters, digits, dots and dash sign):')
+    print_debug('  example: yourdomain.plugin-name')
+    print_debug('Or press enter to cancel operation')
+    plname = ''
+    while True:
+        plname = input('Plugin name: ')
+        if plname == '':
+            print('Operation cancelled')
+            exit()
+        errors = validate_unacceptable_symbols(plname, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-.')
+        if plname[0] in '0123456789.-':
+            errors += 1
+            print_error('Plugin name should start with letter')
+        if errors <= 0:
+            break
+    print_bold(f'Using plugin name "{plname}"')
+    cpp_plname = plname.replace('-', '_')
+    print_bold('Enter singleton name (use only letters and digits):')
+    print_debug('  example: DomainPluginName')
+    print_debug('Or press enter to cancel operation')
+    display_name = ''
+    while True:
+        display_name = input('Singleton name: ')
+        if display_name == '':
+            print('Operation cancelled')
+            exit()
+        errors = validate_unacceptable_symbols(display_name, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
+        if display_name[0] in '0123456789':
+            errors += 1
+            print_error('Singleton name should start with letter')
+        if errors <= 0:
+            break
+    print_bold(f'Using singleton name "{display_name}"')
+    gdip = f"""
+[config]
+name="{display_name}"
+binary="{plname}.xcframework"
+initialization="{cpp_plname}_init"
+deinitialization="{cpp_plname}_deinit"
+
+[dependencies]
+linked=[]
+embedded=[]
+system=[]
+capabilities=[]
+files=[]
+[plist]
+"""
+    cpp_header = f"""
+void {cpp_plname}_init();
+void {cpp_plname}_deinit();
+"""
+
+    cpp_body = """
+#import <Foundation/Foundation.h>
+#import "godot_plugin.h"
+#import "godot_plugin_class.h"
+#import "core/engine.h"
+
+PluginExample *plugin;
+
+void godot_plugin_init() {
+    plugin = memnew(PluginExample);
+    Engine::get_singleton()->add_singleton(Engine::Singleton(\""""+display_name+"""\", plugin));
+}
+
+void godot_plugin_deinit() {
+   if (plugin) {
+       memdelete(plugin);
+   }
+}
+"""
+
+    meta = {
+        "name": plname,
+        "display_name": display_name,
+        "description": "",
+        "version": "1.0.0",
+        "license": "MIT",
+        "url": "https://github.com/YourGitHubName/your_github_repository",
+        "category": "misc",
+        "godot_version": "3.2.4",
+        "author": {
+            "name": "Your Name",
+            "url": "https://your_site.com",
+            "donate": "Url to your donate page, or remove if not needed"
+        },
+        "platform_ios": {
+            "files": {
+                "bin/godot_plugin.debug.xcframework": f"ios/plugins/{plname}/{plname}.debug.xcframework",
+                "bin/godot_plugin.release.xcframework": f"ios/plugins/{plname}/{plname}.release.xcframework",
+                "plugin_template.gdip": f"ios/plugins/{plname}/{plname}.gdip"
+            }
+        }
+    }
+    with open('godot_plugin/godot_plugin.h', 'w') as f:
+        f.write(cpp_header)
+    with open('godot_plugin/godot_plugin.mm', 'w') as f:
+        f.write(cpp_body)
+    with open('plugin_template.gdip', 'w') as f:
+        f.write(gdip)
+    with open('nativelib.json', 'w') as f:
+        json.dump(meta, f, indent = 2)
+    print_bold('Plugin name set successfully. You can edit file "nativelib.json" and update plugin description, author information and repository url')
+
+def add_new_method():
+    pass
+
+def show_menu():
+    print_green('Select operation:')
+    while True:
+        print_bold(' 0: Change plugin name')
+        print_bold(' 1: Add new method')
+        print_bold(' 2: Exit')
+        op = input('Operation: ')
+        if op == '0':
+            set_plugin_name()
+        elif op == '1':
+            add_new_method()
+        elif op == '2':
+            exit()
+        else:
+            print('Uknown operation')
+
+print_green('*** Godot iOS plugin template ***')
+
+if not os.path.exists('nativelib.json'):
+    set_plugin_name()
+else:
+    show_menu()
+
