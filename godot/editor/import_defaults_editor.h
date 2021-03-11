@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  http_request.h                                                       */
+/*  import_defaults_editor.h                                             */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,46 +28,45 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef HTTP_REQUEST_H
-#define HTTP_REQUEST_H
+#ifndef IMPORT_DEFAULTS_EDITOR_H
+#define IMPORT_DEFAULTS_EDITOR_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "core/undo_redo.h"
+#include "editor/editor_data.h"
+#include "editor/editor_plugin_settings.h"
+#include "editor/editor_sectioned_inspector.h"
+#include "editor_autoload_settings.h"
+#include "scene/gui/center_container.h"
+#include "scene/gui/option_button.h"
 
-#include "stddef.h"
+class ImportDefaultsEditorSettings;
 
-typedef enum {
-	XHR_READY_STATE_UNSENT = 0,
-	XHR_READY_STATE_OPENED = 1,
-	XHR_READY_STATE_HEADERS_RECEIVED = 2,
-	XHR_READY_STATE_LOADING = 3,
-	XHR_READY_STATE_DONE = 4,
-} godot_xhr_ready_state_t;
+class ImportDefaultsEditor : public VBoxContainer {
+	GDCLASS(ImportDefaultsEditor, VBoxContainer)
 
-extern int godot_xhr_new();
-extern void godot_xhr_reset(int p_xhr_id);
-extern void godot_xhr_free(int p_xhr_id);
+	OptionButton *importers;
+	Button *save_defaults;
+	Button *reset_defaults;
 
-extern int godot_xhr_open(int p_xhr_id, const char *p_method, const char *p_url, const char *p_user = NULL, const char *p_password = NULL);
+	EditorInspector *inspector;
 
-extern void godot_xhr_set_request_header(int p_xhr_id, const char *p_header, const char *p_value);
+	ImportDefaultsEditorSettings *settings;
 
-extern void godot_xhr_send(int p_xhr_id, const void *p_data, int p_len);
-extern void godot_xhr_abort(int p_xhr_id);
+	void _update_importer();
+	void _importer_selected(int p_index);
 
-/* this is an HTTPClient::ResponseCode, not ::Status */
-extern int godot_xhr_get_status(int p_xhr_id);
-extern godot_xhr_ready_state_t godot_xhr_get_ready_state(int p_xhr_id);
+	void _reset();
+	void _save();
 
-extern int godot_xhr_get_response_headers_length(int p_xhr_id);
-extern void godot_xhr_get_response_headers(int p_xhr_id, char *r_dst, int p_len);
+protected:
+	void _notification(int p_what);
+	static void _bind_methods();
 
-extern int godot_xhr_get_response_length(int p_xhr_id);
-extern void godot_xhr_get_response(int p_xhr_id, void *r_dst, int p_len);
+public:
+	void clear();
 
-#ifdef __cplusplus
-}
-#endif
+	ImportDefaultsEditor();
+	~ImportDefaultsEditor();
+};
 
-#endif /* HTTP_REQUEST_H */
+#endif // IMPORT_DEFAULTS_EDITOR_H
