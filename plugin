@@ -43,6 +43,10 @@ def print_green(s):
 def print_blue(s):
     print('{0}{2}{1}'.format(bcolors.OKBLUE, bcolors.ENDC, s))
 
+def cancel():
+    print_debug('Operation cancelled')
+    exit()
+
 def file_text(filepath):
     if sys.version_info[0] >= 3:
         return pathlib.Path(filepath).read_text()
@@ -67,40 +71,7 @@ def replace_template(filename, template, value):
     except IOError as e:
         print_error(e)
 
-def set_plugin_name():
-    print_bold('Enter new plugin name (use only letters, digits, dots and dash sign):')
-    print_debug('  example: yourdomain.plugin-name')
-    print_debug('Or press enter to cancel operation')
-    plname = ''
-    while True:
-        plname = input('Plugin name: ')
-        if plname == '':
-            print('Operation cancelled')
-            exit()
-        errors = validate_unacceptable_symbols(plname, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-.')
-        if plname[0] in '0123456789.-':
-            errors += 1
-            print_error('Plugin name should start with letter')
-        if errors <= 0:
-            break
-    print_bold(f'Using plugin name "{plname}"')
-    cpp_plname = plname.replace('-', '_')
-    print_bold('Enter singleton name (use only letters and digits):')
-    print_debug('  example: DomainPluginName')
-    print_debug('Or press enter to cancel operation')
-    display_name = ''
-    while True:
-        display_name = input('Singleton name: ')
-        if display_name == '':
-            print('Operation cancelled')
-            exit()
-        errors = validate_unacceptable_symbols(display_name, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
-        if display_name[0] in '0123456789':
-            errors += 1
-            print_error('Singleton name should start with letter')
-        if errors <= 0:
-            break
-    print_bold(f'Using singleton name "{display_name}"')
+def store_plugin_name(plname, cpp_plname):
     gdip = f"""
 [config]
 name="{display_name}"
@@ -173,17 +144,149 @@ void godot_plugin_deinit() {
         json.dump(meta, f, indent = 2)
     print_bold('Plugin name set successfully. You can edit file "nativelib.json" and update plugin description, author information and repository url')
 
+def store_new_method(ret_type, method_name, args):
+    inputs = []
+    n = 1
+    for arg in args:
+        inputs.append(arg + ' arg'+str(n))
+        n += 1
+    declaration = f"""
+void PluginExample::{method_name}(""" + ', '.join(inputs) + """) {
+}
+"""
+    completed = False
+    try:
+        pr_str = file_text('godot_plugin/godot_plugin_class.h')
+        lines = pr_str.split('\n')
+        with open('godot_plugin/godot_plugin_class.h', 'w') as f:
+            for l in lines:
+                f.write(l + '\n')
+                if l == 'public:':
+                    f.write(f'    {ret_type} {method_name} (' + ', '.join(inputs) + ');')
+                    completed = True
+    except IOError as e:
+        print_error(e)
+        exit()
+    if not completed:
+        print_error('Can not process header')
+        cancel()
+    try:
+        with open('godot_plugin/godot_plugin_class.mm', 'a') as f:
+            f.write(declaration)
+    except IOError as e:
+        print_error(e)
+        exit()
+    print(f'Generated new method: {ret_type} {method_name} (' + ', '.join(args) + ')')
+
+def set_plugin_name():
+    print_green('Enter new plugin name (use only letters, digits, dots and dash sign):')
+    print_debug('  example: domain.plugin-name')
+    print_debug('Or press enter to cancel operation')
+    plname = ''
+    while True:
+        plname = input('Plugin name: ')
+        if plname == '':
+            cancel()
+        errors = validate_unacceptable_symbols(plname, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-.')
+        if plname[0] in '0123456789.-':
+            errors += 1
+            print_error('Plugin name should start with letter')
+        if errors <= 0:
+            break
+    print_bold(f'Using plugin name "{plname}"')
+    cpp_plname = plname.replace('-', '_')
+    print_green('Enter singleton name (use only letters and digits):')
+    print_debug('  example: DomainPluginName')
+    print_debug('Or press enter to cancel operation')
+    display_name = ''
+    while True:
+        display_name = input('Singleton name: ')
+        if display_name == '':
+            cancel()
+        errors = validate_unacceptable_symbols(display_name, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
+        if display_name[0] in '0123456789':
+            errors += 1
+            print_error('Singleton name should start with letter')
+        if errors <= 0:
+            break
+    print_bold(f'Using singleton name "{display_name}"')
+    store_plugin_name(plname, cpp_plname)
+
+def input_cpp_type():
+    print_bold(' 0: void (no value)')
+    print_bold(' 1: int (integral number)')
+    print_bold(' 2: float (decimal number)')
+    print_bold(' 3: String')
+    print_bold(' 4: Array')
+    print_bold(' 5: Dictionary')
+    ret_type = ''
+    while True:
+        ret_type = input('Return type: ')
+        if ret_type == '':
+            cancel()
+        elif ret_type == '0':
+            return 'void'
+        elif ret_type == '1':
+            return 'int'
+        elif ret_type == '2':
+            return 'float'
+        elif ret_type == '3':
+            return 'String'
+        elif ret_type == '4':
+            return 'Array'
+        elif ret_type == '5':
+            return 'Dictionary'
+        else:
+            print('Unknown answer')
+
 def add_new_method():
-    pass
+    print_green('Enter new method\'s name (use only letters, digits and dash):')
+    print_debug('Or press enter to cancel operation')
+    method_name = ''
+    while True:
+        method_name = input('Method name: ')
+        if method_name == '':
+            cancel()
+        errors = validate_unacceptable_symbols(method_name, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_')
+        if method_name[0] in '0123456789_':
+            errors += 1
+            print_error('Method name should start with letter')
+        if errors <= 0:
+            break
+    print_bold('Select method\'s return type:')
+    ret_type = input_cpp_type()
+    args = []
+    print_bold('Set input argument types')
+    new_arg = ''
+    while True:
+        print(f'Current method declaration: {ret_type} {method_name} (' + ', '.join(args) + ')')
+        print_green('Select operation:')
+        print_debug('Or press enter to cancel operation')
+        print_bold(' 0: Finish method declaration')
+        print_bold(' 1: Add one more input argument')
+        new_arg = input('Operation: ')
+        if new_arg == '':
+            cancel()
+        elif new_arg == '0':
+            break
+        elif new_arg == '1':
+            print_green('Select type for new argument')
+            new_arg = input_cpp_type()
+            args.append(new_arg)
+        else:
+            print('Uknown operation')
+    store_new_method(ret_type, method_name, args)
 
 def show_menu():
-    print_green('Select operation:')
     while True:
+        print_green('Select operation:')
         print_bold(' 0: Change plugin name')
-        print_bold(' 1: Add new method')
+        print_bold(' 1: Add new CPP method')
         print_bold(' 2: Exit')
         op = input('Operation: ')
-        if op == '0':
+        if op == '':
+            cancel()
+        elif op == '0':
             set_plugin_name()
         elif op == '1':
             add_new_method()
