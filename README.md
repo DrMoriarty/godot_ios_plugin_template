@@ -46,44 +46,15 @@ This is example of `nativelib.json` file with all necessary fields:
 
 # Add some useful code
 
-This plugin template allows you write your code in Swift, but you should use C++ class in order to glue Swift code with internals of Godot.
+This plugin template allows you write your code in Objective-C and Swift. But in all cases it uses C++ class in order to glue native code with internals of Godot.
 
-Add new methods to `godot_plugin/godot_plugin_class.h` and write their implementation in `godot_plugin/godot_plugin_class.mm`. The template has two methods which you can use as reference: `input_method` and `output_method`. First show you how to process input parameters from Godot's types into Objective-C types. There are several methods for translating, see them in the beginning of file `godot_plugin_class.mm`. The second method shows you how to return complex dictionary from native code to Godot.
+You can add new methods to plugin by again using `plugin` script:
 
-In file `SwiftClass.swift` you can find the place for your Swift code. Then you can call it's methods from C++ glue class.
+![2021-03-15-120807](https://user-images.githubusercontent.com/1177068/111142355-a3d1f780-8595-11eb-89bb-72fa65dea349.gif)
 
-After adding new methods don't forget to make them available for Godot. Open file `godot_plugin/godot_plugin_class.mm` find method `PluginExample::_bind_methods` and add new method declarations (use two existing methods as reference).
+During script work you should enter the name of the method, return type and all arguments types. It will create C++ method and optionally Swift method (if you choosed this option). After creating you should add return statement if the method's return type not `void`.
 
-## Example
-
-For example lets add function something_useful with one string input argument in plugin.
-
-Add this to `godot_plugin_class.h`:
-```
-void something_useful(String arg1);
-```
-
-It should be in public area (after input_method and output_method). Then add this to the end of `godot_plugin_class.mm`:
-```
-    void PluginExample::something_useful(String arg1) {
-        [SwiftClass somethingUsefulWithStr:to_nsstring(arg1)];
-    }
-```
-
-Also you should add this string to method `_bind_methods()` in order to let godot find this method:
-```
-    ClassDB::bind_method(D_METHOD("something_useful"), &PluginExample::something_useful);
-```
-
-Then go to `SwiftClass.swift` and write the body of method:
-```
-    static func somethingUseful(str: String) {
-        print("This is useful: " + str)
-    }
-```
-
-Voila! Now you can call it with `pe.something_useful("anystring")`
-
+You can use script `plugin` many times to add more methods. But avoid editing other plugin's files because it can may lead to erros in executing of script. The best case is when you at first created all needed method stubs and after that you added your own code. 
 
 # Plugin building
 
