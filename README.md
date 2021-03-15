@@ -11,7 +11,7 @@ In common case you should not clone or fork this repository. Just download [http
 
 In order to use several plugins at one time there are necessary that all of them have unique names. In order to set some unique name to your plugin just run `plugin` script in it's directory.
 
-Note: To run this script you should have python installed in your system. All MacOses and the most of Linuxes already has preinstalled python. For Windows you should to to https://www.python.org/downloads/windows/ and download it first.
+Note: To run this script you should have python installed in your system. All MacOSes and the most of Linuxes already have preinstalled python. For Windows you should go to https://www.python.org/downloads/windows/ and download it first.
 
 Script usage is very simple:
 ![2021-03-15-120654](https://user-images.githubusercontent.com/1177068/111130490-526f3b80-8588-11eb-968a-fee67c1ba5a1.gif)
