@@ -71,7 +71,7 @@ def replace_template(filename, template, value):
     except IOError as e:
         print_error(e)
 
-def store_plugin_name(plname, cpp_plname):
+def store_plugin_name(plname, cpp_plname, display_name):
     gdip = f"""
 [config]
 name="{display_name}"
@@ -289,7 +289,7 @@ def set_plugin_name():
         if errors <= 0:
             break
     print_bold(f'Using singleton name "{display_name}"')
-    store_plugin_name(plname, cpp_plname)
+    store_plugin_name(plname, cpp_plname, display_name)
 
 def input_cpp_type(include_void):
     if include_void:
