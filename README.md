@@ -7,6 +7,43 @@ Xcode project allows to build static `.a` libraries, that could be used with `.g
 
 In common case you should not clone or fork this repository. Just download [https://github.com/DrMoriarty/godot_ios_plugin_template/archive/master.zip](https://github.com/DrMoriarty/godot_ios_plugin_template/archive/master.zip) and you can start code.
 
+# Rename plugin template
+
+In order to use several plugins at one time there are necessary that all of them have unique names. In order to set some unique name to your plugin just run `plugin` script in it's directory.
+
+Note: To run this script you should have python installed in your system. All MacOses and the most of Linuxes already has preinstalled python. For Windows you should to to https://www.python.org/downloads/windows/ and download it first.
+
+Script usage is very simple:
+![2021-03-15-120654](https://user-images.githubusercontent.com/1177068/111130490-526f3b80-8588-11eb-968a-fee67c1ba5a1.gif)
+
+The script generates all needed files to compile and publish your plugin with new name. Additionaly you may want to edit generated `nativelib.json` and set you (author) name, URL of your repository plugin's description and so on.
+
+This is example of `nativelib.json` file with all necessary fields:
+```
+{
+  "name": "foo-bar135",
+  "display_name": "Foo Bar 135",
+  "description": "Description of your plugin. One line, but it can be very long.",
+  "version": "1.0.0",
+  "license": "MIT",
+  "url": "https://github.com/YourGitHubName/your_github_repository",
+  "category": "misc",
+  "godot_version": "3.2.4",
+  "author": {
+    "name": "Your Name",
+    "url": "https://your_site.com",
+    "donate": "Url to your donate page, or remove if not needed"
+  },
+  "platform_ios": {
+    "files": {
+      "bin/godot_plugin.debug.xcframework": "ios/plugins/foo_bar135/foo_bar135.debug.xcframework",
+      "bin/godot_plugin.release.xcframework": "ios/plugins/foo_bar135/foo_bar135.release.xcframework",
+      "plugin_template.gdip": "ios/plugins/foo_bar135/foo_bar135.gdip"
+    }
+  }
+}
+```
+
 # Add some useful code
 
 This plugin template allows you write your code in Swift, but you should use C++ class in order to glue Swift code with internals of Godot.
@@ -47,41 +84,6 @@ Then go to `SwiftClass.swift` and write the body of method:
 
 Voila! Now you can call it with `pe.something_useful("anystring")`
 
-# Rename plugin template
-
-In order to use several plugins at one time there are necessary that all of them have unique names. So you should rename `plugin_template` to something more suitable.
-
-Let's imagine that our new plugin name will be `foo-bar135`. Now I show you what exactly should you change step by step:
-
-1) File `godot_plugin/godot_plugin.h` - change `godot_plugin_init()` -> `foo_bar135_init()`, `godot_plugin_deinit()` -> `foo_bar135_deinit()`
-2) File `godot_plugin/godot_plugin.mm` - change `godot_plugin_init()` -> `foo_bar135_init()`, `godot_plugin_deinit()` -> `foo_bar135_deinit()`, `Engine::Singleton("PluginExample", plugin)` -> `Engine::Singleton("FooBar135", plugin)`
-3) File `plugin_template.gdip` - change `"PluginTemplate"` -> `"FooBar135"`, `"godot_plugin.a"` -> `"foo_bar135.a"`, `godot_plugin_init` -> `foo_bar135_init`, `godot_plugin_deinit` -> `foo_bar135_deinit`, 
-
-In file `nativelib.json` there are more changes. I will show you final variant:
-```
-{
-  "name": "foo-bar135",
-  "display_name": "Foo Bar 135",
-  "description": "Description of your plugin. One line, but it can be very long.",
-  "version": "1.0.0",
-  "license": "MIT",
-  "url": "https://github.com/YourGitHubName/your_github_repository",
-  "category": "misc",
-  "godot_version": "3.2.4",
-  "author": {
-    "name": "Your Name",
-    "url": "https://your_site.com",
-    "donate": "Url to your donate page, or remove if not needed"
-  },
-  "platform_ios": {
-    "files": {
-      "bin/godot_plugin.debug.xcframework": "ios/plugins/foo_bar135/foo_bar135.debug.xcframework",
-      "bin/godot_plugin.release.xcframework": "ios/plugins/foo_bar135/foo_bar135.release.xcframework",
-      "plugin_template.gdip": "ios/plugins/foo_bar135/foo_bar135.gdip"
-    }
-  }
-}
-```
 
 # Plugin building
 
