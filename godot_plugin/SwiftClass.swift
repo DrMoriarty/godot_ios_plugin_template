@@ -10,13 +10,4 @@ import Foundation
 
 @objcMembers public class SwiftClass : NSObject
 {
-    static func sayHello(str: String) {
-        print("Hello, " + str)
-    }
-    
-    static func makeSomethingCool() -> NSDictionary {
-        let dictionary = NSMutableDictionary()
-        dictionary["something"] = "cool"
-        return dictionary as NSDictionary
-    }
 }

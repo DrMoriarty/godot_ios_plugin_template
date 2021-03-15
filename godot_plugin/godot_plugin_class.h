@@ -17,9 +17,6 @@ class PluginExample : public Object {
     
 public:
     
-    void input_method(String arg1, Dictionary arg2);
-    Dictionary output_method();
-    
     PluginExample();
     ~PluginExample();
 };

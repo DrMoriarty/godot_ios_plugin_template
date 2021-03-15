@@ -167,19 +167,6 @@ NSObject *variant_to_nsobject(Variant v) {
  * Bind plugin's public interface
  */
 void PluginExample::_bind_methods() {
-    ClassDB::bind_method(D_METHOD("input_method"), &PluginExample::input_method);
-    ClassDB::bind_method(D_METHOD("output_method"), &PluginExample::output_method);
-}
-
-void PluginExample::input_method(String arg1, Dictionary arg2) {
-    NSString *s = to_nsstring(arg1);
-    NSDictionary *d = to_nsdictionary(arg2);
-    [SwiftClass sayHelloWithStr:s];
-}
-
-Dictionary PluginExample::output_method() {
-    NSDictionary *d = [SwiftClass makeSomethingCool];
-    return from_nsdictionary(d);
 }
 
 PluginExample::PluginExample() {

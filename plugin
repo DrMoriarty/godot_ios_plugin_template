@@ -144,15 +144,88 @@ void godot_plugin_deinit() {
         json.dump(meta, f, indent = 2)
     print_bold('Plugin name set successfully. You can edit file "nativelib.json" and update plugin description, author information and repository url')
 
-def store_new_method(ret_type, method_name, args):
+def store_new_method(ret_type, method_name, args, use_swift):
     inputs = []
     n = 1
-    for arg in args:
-        inputs.append(arg + ' arg'+str(n))
+    converts = []
+    swiftargs = []
+    for argtype in args:
+        varname = 'arg'+str(n)
+        inputs.append(argtype + ' ' + varname)
+        vname = 'a'+str(n)
+        if argtype == 'String':
+            converts.append('    NSString *' + vname + ' = to_nsstring(' + varname + ');')
+            swiftargs.append(['NSString', vname, vname])
+        elif argtype == 'Array':
+            converts.append('    NSArray *' + vname + ' = to_nsarray(' + varname + ');')
+            swiftargs.append(['NSArray', vname, vname])
+        elif argtype == 'Dictionary':
+            converts.append('    NSDictionary *' + vname + ' = to_nsdictionary(' + varname + ');')
+            swiftargs.append(['NSDictionary', vname, vname])
+        elif argtype == 'int':
+            swiftargs.append(['Int', vname, varname])
+        elif argtype == 'float':
+            swiftargs.append(['Float', vname, varname])
+        else:
+            swiftargs.append([argtype, vname, varname])
         n += 1
+    swift_call = ''
+    if use_swift:
+        if len(swiftargs) > 0:
+            swift_call = f'[SwiftClass {method_name}With'
+            for sa in swiftargs:
+                if sa == swiftargs[0]:
+                    swift_call += sa[1].upper() + ':' + sa[2] + ' ';
+                else:
+                    swift_call += sa[1] + ':' + sa[2] + ' ';
+            swift_call += ']'
+        else:
+            swift_call = f'[SwiftClass {method_name}]'
+        swift_ret_type = ''
+        if ret_type == 'void':
+            swift_call += ';'
+        elif ret_type == 'int':
+            swift_call = '    return ' + swift_call + ';';
+            swift_ret_type = ' -> Int'
+        elif ret_type == 'float':
+            swift_call = '    return ' + swift_call + ';';
+            swift_ret_type = ' -> Float'
+        elif ret_type == 'String':
+            swift_call = '    return from_nsstring('+swift_call+');'
+            swift_ret_type = ' -> NSString'
+        elif ret_type == 'Array':
+            swift_call = '    return from_nsarray('+swift_call+');'
+            swift_ret_type = ' -> NSArray'
+        elif ret_type == 'Dictionary':
+            swift_call = '    return from_nsdictionary('+swift_call+');'
+            swift_ret_type = ' -> NSDictionary'
+
+        sargs = []
+        for sa in swiftargs:
+            sargs.append(sa[1]+': '+sa[0])
+        swift_declaration = f"""
+    static func {method_name}(""" + ', '.join(sargs) + ") "+swift_ret_type+""" {
+    }
+"""
+        swift_completed = False
+        try:
+            pr_str = file_text('godot_plugin/SwiftClass.swift')
+            lines = pr_str.split('\n')
+            with open('godot_plugin/SwiftClass.swift', 'w') as f:
+                for l in lines:
+                    if l.startswith('}'):
+                        f.write(swift_declaration)
+                        swift_completed = True
+                    f.write(l + '\n')
+        except IOError as e:
+            print_error(e)
+            exit()
+        if not swift_completed:
+            print_error('Can not process Swift class')
+            cancel()
+
     declaration = f"""
-void PluginExample::{method_name}(""" + ', '.join(inputs) + """) {
-}
+{ret_type} PluginExample::{method_name}(""" + ', '.join(inputs) + """) {
 """
     completed = False
     try:
@@ -164,15 +237,21 @@ void PluginExample::{method_name}(""" + ', '.join(inputs) + """) {
                 if l == 'public:':
                     f.write(f'    {ret_type} {method_name} (' + ', '.join(inputs) + ');')
                     completed = True
-    except IOError as e:
-        print_error(e)
-        exit()
-    if not completed:
-        print_error('Can not process header')
-        cancel()
-    try:
-        with open('godot_plugin/godot_plugin_class.mm', 'a') as f:
+        if not completed:
+            print_error('Can not process header')
+            cancel()
+        pr_str = file_text('godot_plugin/godot_plugin_class.mm')
+        lines = pr_str.split('\n')
+        with open('godot_plugin/godot_plugin_class.mm', 'w') as f:
+            for l in lines:
+                f.write(l + '\n')
+                if l.startswith('void PluginExample::_bind_methods() {'):
+                    f.write(f'    ClassDB::bind_method(D_METHOD("{method_name}"), &PluginExample::{method_name});\n')
             f.write(declaration)
+            f.write('\n'.join(converts))
+            if use_swift:
+                f.write('\n'+swift_call+'\n')
+            f.write('\n}\n')
     except IOError as e:
         print_error(e)
         exit()
@@ -212,8 +291,9 @@ def set_plugin_name():
     print_bold(f'Using singleton name "{display_name}"')
     store_plugin_name(plname, cpp_plname)
 
-def input_cpp_type():
-    print_bold(' 0: void (no value)')
+def input_cpp_type(include_void):
+    if include_void:
+        print_bold(' 0: void (no value)')
     print_bold(' 1: int (integral number)')
     print_bold(' 2: float (decimal number)')
     print_bold(' 3: String')
@@ -224,7 +304,7 @@ def input_cpp_type():
         ret_type = input('Return type: ')
         if ret_type == '':
             cancel()
-        elif ret_type == '0':
+        elif ret_type == '0' and include_void:
             return 'void'
         elif ret_type == '1':
             return 'int'
@@ -239,7 +319,7 @@ def input_cpp_type():
         else:
             print('Unknown answer')
 
-def add_new_method():
+def add_new_method(use_swift):
     print_green('Enter new method\'s name (use only letters, digits and dash):')
     print_debug('Or press enter to cancel operation')
     method_name = ''
@@ -254,7 +334,7 @@ def add_new_method():
         if errors <= 0:
             break
     print_bold('Select method\'s return type:')
-    ret_type = input_cpp_type()
+    ret_type = input_cpp_type(True)
     args = []
     print_bold('Set input argument types')
     new_arg = ''
@@ -271,26 +351,29 @@ def add_new_method():
             break
         elif new_arg == '1':
             print_green('Select type for new argument')
-            new_arg = input_cpp_type()
+            new_arg = input_cpp_type(False)
             args.append(new_arg)
         else:
             print('Uknown operation')
-    store_new_method(ret_type, method_name, args)
+    store_new_method(ret_type, method_name, args, use_swift)
 
 def show_menu():
     while True:
         print_green('Select operation:')
         print_bold(' 0: Change plugin name')
         print_bold(' 1: Add new CPP method')
-        print_bold(' 2: Exit')
+        print_bold(' 2: Add new Swift method')
+        print_bold(' 3: Exit')
         op = input('Operation: ')
         if op == '':
             cancel()
         elif op == '0':
             set_plugin_name()
         elif op == '1':
-            add_new_method()
+            add_new_method(False)
         elif op == '2':
+            add_new_method(True)
+        elif op == '3':
             exit()
         else:
             print('Uknown operation')
