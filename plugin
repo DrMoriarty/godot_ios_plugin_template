@@ -128,9 +128,9 @@ void """+cpp_plname+"""_deinit() {
         },
         "platform_ios": {
             "files": {
-                "bin/godot_plugin.debug.xcframework": f"ios/plugins/{plname}/{plname}.debug.xcframework",
-                "bin/godot_plugin.release.xcframework": f"ios/plugins/{plname}/{plname}.release.xcframework",
-                "plugin_template.gdip": f"ios/plugins/{plname}/{plname}.gdip"
+                f"bin/{plname}.debug.xcframework": f"ios/plugins/{plname}/{plname}.debug.xcframework",
+                f"bin/{plname}.release.xcframework": f"ios/plugins/{plname}/{plname}.release.xcframework",
+                f"{plname}.gdip": f"ios/plugins/{plname}/"
             }
         }
     }
@@ -138,10 +138,22 @@ void """+cpp_plname+"""_deinit() {
         f.write(cpp_header)
     with open('godot_plugin/godot_plugin.mm', 'w') as f:
         f.write(cpp_body)
-    with open('plugin_template.gdip', 'w') as f:
+    with open(f'{plname}.gdip', 'w') as f:
         f.write(gdip)
     with open('nativelib.json', 'w') as f:
         json.dump(meta, f, indent = 2)
+    try:
+        pr_str = file_text('generate_static_library.sh')
+        lines = pr_str.split('\n')
+        with open('generate_static_library.sh', 'w') as f:
+            for l in lines:
+                if l.startswith('OUT='):
+                    f.write('OUT=${1:-'+plname+'}\n')
+                else:
+                    f.write(l + '\n')
+    except IOError as e:
+        print_error(e)
+        exit()
     print_bold('Plugin name set successfully. You can edit file "nativelib.json" and update plugin description, author information and repository url')
 
 def store_new_method(ret_type, method_name, args, use_swift):

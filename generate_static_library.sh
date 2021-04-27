@@ -1,7 +1,8 @@
 #!/bin/bash
 
-PROJECT=${1:-godot_plugin.xcodeproj}
+OUT=${1:-godot_plugin}
 SCHEME=${2:-godot_plugin}
+PROJECT=${3:-godot_plugin.xcodeproj}
 
 xcodebuild archive \
     -project "./$PROJECT" \
@@ -42,12 +43,17 @@ xcodebuild archive \
 #     "./bin/sim_debug.xcarchive/Products/usr/local/lib/lib${SCHEME}.a" \
 #     -output "./bin/${SCHEME}.debug.a"
 
-xcodebuild -create-xcframework \
-    -library "./bin/ios_release.xcarchive/Products/usr/local/lib/lib${SCHEME}.a" \
-    -library "./bin/sim_release.xcarchive/Products/usr/local/lib/lib${SCHEME}.a" \
-    -output "./bin/${SCHEME}.release.xcframework"
+mv "./bin/ios_release.xcarchive/Products/usr/local/lib/lib${SCHEME}.a" "./bin/ios_release.xcarchive/Products/usr/local/lib/${OUT}.a"
+mv "./bin/sim_release.xcarchive/Products/usr/local/lib/lib${SCHEME}.a" "./bin/sim_release.xcarchive/Products/usr/local/lib/${OUT}.a"
+mv "./bin/ios_debug.xcarchive/Products/usr/local/lib/lib${SCHEME}.a" "./bin/ios_debug.xcarchive/Products/usr/local/lib/${OUT}.a"
+mv "./bin/sim_debug.xcarchive/Products/usr/local/lib/lib${SCHEME}.a" "./bin/sim_debug.xcarchive/Products/usr/local/lib/${OUT}.a"
 
 xcodebuild -create-xcframework \
-    -library "./bin/ios_debug.xcarchive/Products/usr/local/lib/lib${SCHEME}.a" \
-    -library "./bin/sim_debug.xcarchive/Products/usr/local/lib/lib${SCHEME}.a" \
-    -output "./bin/${SCHEME}.debug.xcframework"
+    -library "./bin/ios_release.xcarchive/Products/usr/local/lib/${OUT}.a" \
+    -library "./bin/sim_release.xcarchive/Products/usr/local/lib/${OUT}.a" \
+    -output "./bin/${OUT}.release.xcframework"
+
+xcodebuild -create-xcframework \
+    -library "./bin/ios_debug.xcarchive/Products/usr/local/lib/${OUT}.a" \
+    -library "./bin/sim_debug.xcarchive/Products/usr/local/lib/${OUT}.a" \
+    -output "./bin/${OUT}.debug.xcframework"
