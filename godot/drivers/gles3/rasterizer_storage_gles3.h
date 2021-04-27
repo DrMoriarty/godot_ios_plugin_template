@@ -97,6 +97,7 @@ public:
 
 		int max_texture_image_units;
 		int max_texture_size;
+		int max_cubemap_texture_size;
 
 		bool generate_wireframes;
 
@@ -1152,6 +1153,8 @@ public:
 
 	virtual void lightmap_capture_set_energy(RID p_capture, float p_energy);
 	virtual float lightmap_capture_get_energy(RID p_capture) const;
+	virtual void lightmap_capture_set_interior(RID p_capture, bool p_interior);
+	virtual bool lightmap_capture_is_interior(RID p_capture) const;
 
 	virtual const PoolVector<LightmapCaptureOctree> *lightmap_capture_get_octree_ptr(RID p_capture) const;
 
@@ -1162,11 +1165,21 @@ public:
 		Transform cell_xform;
 		int cell_subdiv;
 		float energy;
-		LightmapCapture() {
+		bool interior;
+
+		SelfList<LightmapCapture> update_list;
+
+		LightmapCapture() :
+				update_list(this) {
 			energy = 1.0;
 			cell_subdiv = 1;
+			interior = false;
 		}
 	};
+
+	SelfList<LightmapCapture>::List capture_update_list;
+
+	void update_dirty_captures();
 
 	mutable RID_Owner<LightmapCapture> lightmap_capture_data_owner;
 
@@ -1388,10 +1401,15 @@ public:
 		// External FBO to render our final result to (mostly used for ARVR)
 		struct External {
 			GLuint fbo;
+			GLuint color;
+			GLuint depth;
 			RID texture;
 
 			External() :
-					fbo(0) {}
+					fbo(0),
+					color(0),
+					depth(0) {
+			}
 		} external;
 
 		uint64_t last_exposure_tick;
@@ -1438,7 +1456,8 @@ public:
 	virtual void render_target_set_position(RID p_render_target, int p_x, int p_y);
 	virtual void render_target_set_size(RID p_render_target, int p_width, int p_height);
 	virtual RID render_target_get_texture(RID p_render_target) const;
-	virtual void render_target_set_external_texture(RID p_render_target, unsigned int p_texture_id);
+	virtual uint32_t render_target_get_depth_texture_id(RID p_render_target) const;
+	virtual void render_target_set_external_texture(RID p_render_target, unsigned int p_texture_id, unsigned int p_depth_id);
 
 	virtual void render_target_set_flag(RID p_render_target, RenderTargetFlags p_flag, bool p_value);
 	virtual bool render_target_was_used(RID p_render_target);
@@ -1507,7 +1526,7 @@ public:
 	virtual void render_info_end_capture();
 	virtual int get_captured_render_info(VS::RenderInfo p_info);
 
-	virtual int get_render_info(VS::RenderInfo p_info);
+	virtual uint64_t get_render_info(VS::RenderInfo p_info);
 	virtual String get_video_adapter_name() const;
 	virtual String get_video_adapter_vendor() const;
 

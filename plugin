@@ -98,10 +98,10 @@ void {cpp_plname}_deinit();
 #import "godot_plugin_class.h"
 #import "core/engine.h"
 
-PluginExample *plugin;
+PluginClass *plugin;
 
 void """+cpp_plname+"""_init() {
-    plugin = memnew(PluginExample);
+    plugin = memnew(PluginClass);
     Engine::get_singleton()->add_singleton(Engine::Singleton(\""""+display_name+"""\", plugin));
 }
 
@@ -148,7 +148,9 @@ void """+cpp_plname+"""_deinit() {
         with open('generate_static_library.sh', 'w') as f:
             for l in lines:
                 if l.startswith('OUT='):
-                    f.write('OUT=${1:-'+plname+'}\n')
+                    f.write(f'OUT={plname}\n')
+                elif l.startswith('CLASS='):
+                    f.write(f'CLASS={display_name}\n')
                 else:
                     f.write(l + '\n')
     except IOError as e:
@@ -237,7 +239,7 @@ def store_new_method(ret_type, method_name, args, use_swift):
             cancel()
 
     declaration = f"""
-{ret_type} PluginExample::{method_name}(""" + ', '.join(inputs) + """) {
+{ret_type} PluginClass::{method_name}(""" + ', '.join(inputs) + """) {
 """
     completed = False
     try:
@@ -257,8 +259,8 @@ def store_new_method(ret_type, method_name, args, use_swift):
         with open('godot_plugin/godot_plugin_class.mm', 'w') as f:
             for l in lines:
                 f.write(l + '\n')
-                if l.startswith('void PluginExample::_bind_methods() {'):
-                    f.write(f'    ClassDB::bind_method(D_METHOD("{method_name}"), &PluginExample::{method_name});\n')
+                if l.startswith('void PluginClass::_bind_methods() {'):
+                    f.write(f'    ClassDB::bind_method(D_METHOD("{method_name}"), &PluginClass::{method_name});\n')
             f.write(declaration)
             f.write('\n'.join(converts))
             if use_swift:

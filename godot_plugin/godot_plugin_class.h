@@ -10,14 +10,14 @@
 
 #include "core/object.h"
 
-class PluginExample : public Object {
-    GDCLASS(PluginExample, Object);
+class PluginClass : public Object {
+    GDCLASS(PluginClass, Object);
     
     static void _bind_methods();
     
 public:
     
-    PluginExample();
-    ~PluginExample();
+    PluginClass();
+    ~PluginClass();
 };
 

@@ -1,1 +1,1 @@
-#define VERSION_HASH "dc99f04d51d6556e5ba4d9cfcce8117d168ac6f1"
+#define VERSION_HASH "8e68f2e5f48c66bfa80b9bb7746a488afb70086d"

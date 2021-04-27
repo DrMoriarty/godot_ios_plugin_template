@@ -166,14 +166,14 @@ NSObject *variant_to_nsobject(Variant v) {
 /*
  * Bind plugin's public interface
  */
-void PluginExample::_bind_methods() {
+void PluginClass::_bind_methods() {
 }
 
-PluginExample::PluginExample() {
+PluginClass::PluginClass() {
     NSLog(@"initialize object");
 }
 
-PluginExample::~PluginExample() {
+PluginClass::~PluginClass() {
     NSLog(@"deinitialize object");
 }
 

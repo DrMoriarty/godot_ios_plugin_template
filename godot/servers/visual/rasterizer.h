@@ -514,6 +514,8 @@ public:
 	virtual int lightmap_capture_get_octree_cell_subdiv(RID p_capture) const = 0;
 	virtual void lightmap_capture_set_energy(RID p_capture, float p_energy) = 0;
 	virtual float lightmap_capture_get_energy(RID p_capture) const = 0;
+	virtual void lightmap_capture_set_interior(RID p_capture, bool p_interior) = 0;
+	virtual bool lightmap_capture_is_interior(RID p_capture) const = 0;
 	virtual const PoolVector<LightmapCaptureOctree> *lightmap_capture_get_octree_ptr(RID p_capture) const = 0;
 
 	/* PARTICLES */
@@ -571,7 +573,8 @@ public:
 	virtual void render_target_set_position(RID p_render_target, int p_x, int p_y) = 0;
 	virtual void render_target_set_size(RID p_render_target, int p_width, int p_height) = 0;
 	virtual RID render_target_get_texture(RID p_render_target) const = 0;
-	virtual void render_target_set_external_texture(RID p_render_target, unsigned int p_texture_id) = 0;
+	virtual uint32_t render_target_get_depth_texture_id(RID p_render_target) const = 0;
+	virtual void render_target_set_external_texture(RID p_render_target, unsigned int p_texture_id, unsigned int p_depth_id) = 0;
 	virtual void render_target_set_flag(RID p_render_target, RenderTargetFlags p_flag, bool p_value) = 0;
 	virtual bool render_target_was_used(RID p_render_target) = 0;
 	virtual void render_target_clear_used(RID p_render_target) = 0;
@@ -601,7 +604,7 @@ public:
 	virtual void render_info_end_capture() = 0;
 	virtual int get_captured_render_info(VS::RenderInfo p_info) = 0;
 
-	virtual int get_render_info(VS::RenderInfo p_info) = 0;
+	virtual uint64_t get_render_info(VS::RenderInfo p_info) = 0;
 	virtual String get_video_adapter_name() const = 0;
 	virtual String get_video_adapter_vendor() const = 0;
 

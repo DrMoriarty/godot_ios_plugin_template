@@ -1,7 +1,7 @@
 /* THIS FILE IS GENERATED DO NOT EDIT */
 #ifndef BOOT_SPLASH_EDITOR_H
 #define BOOT_SPLASH_EDITOR_H
-static const Color boot_splash_editor_bg_color = Color(0.14, 0.14, 0.14);
+static const Color boot_splash_editor_bg_color = Color(0.125, 0.145, 0.192);
 static const unsigned char boot_splash_editor_png[] = {
 137,
 80,

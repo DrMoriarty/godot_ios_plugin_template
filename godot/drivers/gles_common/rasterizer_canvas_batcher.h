@@ -184,7 +184,15 @@ public:
 		// first vertex of this batch in the vertex lists
 		uint32_t first_vert;
 
-		BatchColor color;
+		// we can keep the batch structure small because we either need to store
+		// the color if a handled batch, or the parent item if a default batch, so
+		// we can reference the correct originating command
+		union {
+			BatchColor color;
+
+			// for default batches we will store the parent item
+			const RasterizerCanvas::Item *item;
+		};
 	};
 
 	struct BatchTex {
@@ -227,7 +235,8 @@ public:
 
 		// we are always splitting items with lots of commands,
 		// and items with unhandled primitives (default)
-		bool use_hardware_transform() const { return num_item_refs == 1; }
+		bool is_single_item() const { return (num_item_refs == 1); }
+		bool use_attrib_transform() const { return flags & RasterizerStorageCommon::USE_LARGE_FVF; }
 	};
 
 	struct BItemRef {
@@ -441,9 +450,12 @@ public:
 			sequence_batch_type_flags = 0;
 		}
 
-		void reset_joined_item(bool p_use_hardware_transform) {
+		void reset_joined_item(bool p_is_single_item, bool p_use_attrib_transform) {
 			reset_flush();
-			use_hardware_transform = p_use_hardware_transform;
+			is_single_item = p_is_single_item;
+			use_attrib_transform = p_use_attrib_transform;
+			use_software_transform = !is_single_item && !use_attrib_transform;
+
 			extra_matrix_sent = false;
 		}
 
@@ -453,7 +465,11 @@ public:
 
 		Batch *curr_batch;
 		int batch_tex_id;
-		bool use_hardware_transform;
+
+		bool is_single_item;
+		bool use_attrib_transform;
+		bool use_software_transform;
+
 		bool contract_uvs;
 		Vector2 texpixel_size;
 		Color final_modulate;
@@ -647,8 +663,11 @@ public:
 			RAST_DEBUG_ASSERT(batch);
 		}
 
-		if (p_blank)
+		if (p_blank) {
 			memset(batch, 0, sizeof(Batch));
+		} else {
+			batch->item = nullptr;
+		}
 
 		return batch;
 	}
@@ -849,6 +868,7 @@ PREAMBLE(void)::_prefill_default_batch(FillState &r_fill_state, int p_command_nu
 			r_fill_state.curr_batch->type = RasterizerStorageCommon::BT_DEFAULT;
 			r_fill_state.curr_batch->first_command = extra_command;
 			r_fill_state.curr_batch->num_commands = 1;
+			r_fill_state.curr_batch->item = &p_item;
 
 			// revert to the original transform mode
 			// e.g. go back to NONE if we were in hardware transform mode
@@ -874,6 +894,7 @@ PREAMBLE(void)::_prefill_default_batch(FillState &r_fill_state, int p_command_nu
 		r_fill_state.curr_batch->type = RasterizerStorageCommon::BT_DEFAULT;
 		r_fill_state.curr_batch->first_command = p_command_num;
 		r_fill_state.curr_batch->num_commands = 1;
+		r_fill_state.curr_batch->item = &p_item;
 	}
 }
 
@@ -985,6 +1006,33 @@ PREAMBLE(void)::batch_initialize() {
 	bdata.settings_use_single_rect_fallback = GLOBAL_GET("rendering/batching/options/single_rect_fallback");
 	bdata.settings_use_software_skinning = GLOBAL_GET("rendering/2d/options/use_software_skinning");
 	bdata.settings_ninepatch_mode = GLOBAL_GET("rendering/2d/options/ninepatch_mode");
+
+	// allow user to override the api usage techniques using project settings
+	int send_null_mode = GLOBAL_GET("rendering/2d/opengl/batching_send_null");
+	switch (send_null_mode) {
+		default: {
+			bdata.buffer_mode_batch_upload_send_null = true;
+		} break;
+		case 1: {
+			bdata.buffer_mode_batch_upload_send_null = false;
+		} break;
+		case 2: {
+			bdata.buffer_mode_batch_upload_send_null = true;
+		} break;
+	}
+
+	int stream_mode = GLOBAL_GET("rendering/2d/opengl/batching_stream");
+	switch (stream_mode) {
+		default: {
+			bdata.buffer_mode_batch_upload_flag_stream = false;
+		} break;
+		case 1: {
+			bdata.buffer_mode_batch_upload_flag_stream = false;
+		} break;
+		case 2: {
+			bdata.buffer_mode_batch_upload_flag_stream = true;
+		} break;
+	}
 
 	// alternatively only enable uv contract if pixel snap in use,
 	// but with this enable bool, it should not be necessary
@@ -1162,10 +1210,17 @@ PREAMBLE(bool)::_light_scissor_begin(const Rect2 &p_item_rect, const Transform2D
 
 	int rh = get_storage()->frame.current_rt->height;
 
+	// using the exact size was leading to off by one errors,
+	// possibly due to pixel snap. For this reason we will boost
+	// the scissor area by 1 pixel, this will take care of any rounding
+	// issues, and shouldn't significantly negatively impact performance.
 	int y = rh - (cliprect.position.y + cliprect.size.y);
+	y += 1; // off by 1 boost before flipping
+
 	if (get_storage()->frame.current_rt->flags[RasterizerStorage::RENDER_TARGET_VFLIP])
 		y = cliprect.position.y;
-	get_this()->gl_enable_scissor(cliprect.position.x, y, cliprect.size.width, cliprect.size.height);
+
+	get_this()->gl_enable_scissor(cliprect.position.x - 1, y, cliprect.size.width + 2, cliprect.size.height + 2);
 
 	return true;
 }
@@ -1254,8 +1309,9 @@ PREAMBLE(bool)::_prefill_line(RasterizerCanvas::Item::CommandLine *p_line, FillS
 	// get the baked line color
 	Color col = p_line->color;
 
-	if (multiply_final_modulate)
+	if (multiply_final_modulate) {
 		col *= r_fill_state.final_modulate;
+	}
 
 	BatchColor bcol;
 	bcol.set(col);
@@ -1303,7 +1359,9 @@ PREAMBLE(bool)::_prefill_line(RasterizerCanvas::Item::CommandLine *p_line, FillS
 	Vector2 from = p_line->from;
 	Vector2 to = p_line->to;
 
-	if (r_fill_state.transform_mode != TM_NONE) {
+	const bool use_large_verts = bdata.use_large_verts;
+
+	if ((r_fill_state.transform_mode != TM_NONE) && (!use_large_verts)) {
 		_software_transform_vertex(from, r_fill_state.transform_combined);
 		_software_transform_vertex(to, r_fill_state.transform_combined);
 	}
@@ -1530,8 +1588,9 @@ bool C_PREAMBLE::_prefill_polygon(RasterizerCanvas::Item::CommandPolygon *p_poly
 	int num_inds = p_poly->indices.size();
 
 	// nothing to draw?
-	if (!num_inds)
+	if (!num_inds || !p_poly->points.size()) {
 		return false;
+	}
 
 	// we aren't using indices, so will transform verts more than once .. less efficient.
 	// could be done with a temporary vertex buffer
@@ -1577,10 +1636,11 @@ bool C_PREAMBLE::_prefill_polygon(RasterizerCanvas::Item::CommandPolygon *p_poly
 
 	// the modulate is always baked
 	Color modulate;
-	if (!use_large_verts && !use_modulate && multiply_final_modulate)
+	if (multiply_final_modulate) {
 		modulate = r_fill_state.final_modulate;
-	else
+	} else {
 		modulate = Color(1, 1, 1, 1);
+	}
 
 	int old_batch_tex_id = r_fill_state.batch_tex_id;
 	r_fill_state.batch_tex_id = _batch_find_or_create_tex(p_poly->texture, p_poly->normal_map, false, old_batch_tex_id);
@@ -1651,13 +1711,22 @@ bool C_PREAMBLE::_prefill_polygon(RasterizerCanvas::Item::CommandPolygon *p_poly
 
 	if (!_software_skin_poly(p_poly, p_item, bvs, vertex_colors, r_fill_state, precalced_colors)) {
 
+		bool software_transform = (r_fill_state.transform_mode != TM_NONE) && (!use_large_verts);
+
 		for (int n = 0; n < num_inds; n++) {
 			int ind = p_poly->indices[n];
 
 			RAST_DEV_DEBUG_ASSERT(ind < p_poly->points.size());
 
+			// recover at runtime from invalid polys (the editor may send invalid polys)
+			if ((unsigned int)ind >= (unsigned int)num_verts) {
+				// will recover as long as there is at least one vertex.
+				// if there are no verts, we will have quick rejected earlier in this function
+				ind = 0;
+			}
+
 			// this could be moved outside the loop
-			if (r_fill_state.transform_mode != TM_NONE) {
+			if (software_transform) {
 				Vector2 pos = p_poly->points[ind];
 				_software_transform_vertex(pos, r_fill_state.transform_combined);
 				bvs[n].pos.set(pos.x, pos.y);
@@ -1796,6 +1865,14 @@ PREAMBLE(bool)::_software_skin_poly(RasterizerCanvas::Item::CommandPolygon *p_po
 		int ind = p_poly->indices[n];
 
 		RAST_DEV_DEBUG_ASSERT(ind < num_verts);
+
+		// recover at runtime from invalid polys (the editor may send invalid polys)
+		if ((unsigned int)ind >= (unsigned int)num_verts) {
+			// will recover as long as there is at least one vertex.
+			// if there are no verts, we will have quick rejected earlier in this function
+			ind = 0;
+		}
+
 		const Point2 &pos = pTemps[ind];
 		bvs[n].pos.set(pos.x, pos.y);
 
@@ -1838,7 +1915,7 @@ bool C_PREAMBLE::_prefill_rect(RasterizerCanvas::Item::CommandRect *rect, FillSt
 		// because joined items with more than 1, the command * will be incorrect
 		// NOTE - this is assuming that use_hardware_transform means that it is a non-joined item!!
 		// If that assumption is incorrect this will go horribly wrong.
-		if (bdata.settings_use_single_rect_fallback && r_fill_state.use_hardware_transform) {
+		if (bdata.settings_use_single_rect_fallback && r_fill_state.is_single_item) {
 			bool is_single_rect = false;
 			int command_num_next = command_num + 1;
 			if (command_num_next < command_count) {
@@ -1876,10 +1953,11 @@ bool C_PREAMBLE::_prefill_rect(RasterizerCanvas::Item::CommandRect *rect, FillSt
 
 	Color col = rect->modulate;
 
-	if (!use_large_verts) {
-		if (multiply_final_modulate) {
-			col *= r_fill_state.final_modulate;
-		}
+	// use_modulate and use_large_verts should have been checked in the calling prefill_item function.
+	// we don't want to apply the modulate on the CPU if it is stored in the vertex format, it will
+	// be applied in the shader
+	if (multiply_final_modulate) {
+		col *= r_fill_state.final_modulate;
 	}
 
 	// instead of doing all the texture preparation for EVERY rect,
@@ -2061,9 +2139,9 @@ bool C_PREAMBLE::_prefill_rect(RasterizerCanvas::Item::CommandRect *rect, FillSt
 		const Transform2D &tr = r_fill_state.transform_combined;
 
 		pBT[0].translate.set(tr.elements[2]);
-		// could do swizzling in shader?
-		pBT[0].basis[0].set(tr.elements[0][0], tr.elements[1][0]);
-		pBT[0].basis[1].set(tr.elements[0][1], tr.elements[1][1]);
+
+		pBT[0].basis[0].set(tr.elements[0][0], tr.elements[0][1]);
+		pBT[0].basis[1].set(tr.elements[1][0], tr.elements[1][1]);
 
 		pBT[1] = pBT[0];
 		pBT[2] = pBT[0];
@@ -2086,11 +2164,11 @@ bool C_PREAMBLE::_prefill_rect(RasterizerCanvas::Item::CommandRect *rect, FillSt
 
 			// apply to an x axis
 			// the x axis and y axis can be taken directly from the transform (no need to xform identity vectors)
-			Vector2 x_axis(tr.elements[0][0], tr.elements[1][0]);
+			Vector2 x_axis(tr.elements[0][0], tr.elements[0][1]);
 
 			// have to do a y axis to check for scaling flips
 			// this is hassle and extra slowness. We could only allow flips via the flags.
-			Vector2 y_axis(tr.elements[0][1], tr.elements[1][1]);
+			Vector2 y_axis(tr.elements[1][0], tr.elements[1][1]);
 
 			// has the x / y axis flipped due to scaling?
 			float cross = x_axis.cross(y_axis);
@@ -2143,19 +2221,15 @@ PREAMBLE(bool)::prefill_joined_item(FillState &r_fill_state, int &r_command_star
 	int command_count = p_item->commands.size();
 	RasterizerCanvas::Item::Command *const *commands = p_item->commands.ptr();
 
-	// checking the color for not being white makes it 92/90 times faster in the case where it is white
-	bool multiply_final_modulate = false;
-	if (!r_fill_state.use_hardware_transform && (r_fill_state.final_modulate != Color(1, 1, 1, 1))) {
-		multiply_final_modulate = true;
+	// whether to multiply final modulate on the CPU, or pass it in the FVF and apply in the shader
+	bool multiply_final_modulate = true;
+
+	if (r_fill_state.is_single_item || bdata.use_modulate || bdata.use_large_verts) {
+		multiply_final_modulate = false;
 	}
 
 	// start batch is a dummy batch (tex id -1) .. could be made more efficient
 	if (!r_fill_state.curr_batch) {
-		// OLD METHOD, but left dangling zero length default batches
-		//		r_fill_state.curr_batch = _batch_request_new();
-		//		r_fill_state.curr_batch->type = RasterizerStorageCommon::BT_DEFAULT;
-		//		r_fill_state.curr_batch->first_command = r_command_start;
-		// should tex_id be set to -1? check this
 
 		// allocate dummy batch on the stack, it should always get replaced
 		// note that the rest of the structure is uninitialized, this should not matter
@@ -2199,7 +2273,7 @@ PREAMBLE(bool)::prefill_joined_item(FillState &r_fill_state, int &r_command_star
 					RasterizerCanvas::Item::CommandTransform *transform = static_cast<RasterizerCanvas::Item::CommandTransform *>(command);
 					const Transform2D &extra_matrix = transform->xform;
 
-					if (r_fill_state.use_hardware_transform) {
+					if (r_fill_state.is_single_item && !r_fill_state.use_attrib_transform) {
 						// if we are using hardware transform mode, we have already sent the final transform,
 						// so we only want to software transform the extra matrix
 						r_fill_state.transform_combined = extra_matrix;
@@ -2410,15 +2484,14 @@ PREAMBLE(void)::flush_render_batches(RasterizerCanvas::Item *p_first_item, Raste
 	// send buffers to opengl
 	get_this()->_batch_upload_buffers();
 
-	RasterizerCanvas::Item::Command *const *commands = p_first_item->commands.ptr();
-
 #if defined(TOOLS_ENABLED) && defined(DEBUG_ENABLED)
 	if (bdata.diagnose_frame) {
+		RasterizerCanvas::Item::Command *const *commands = p_first_item->commands.ptr();
 		diagnose_batches(commands);
 	}
 #endif
 
-	get_this()->render_batches(commands, p_current_clip, r_reclip, p_material);
+	get_this()->render_batches(p_current_clip, r_reclip, p_material);
 
 	// if we overrode the fvf for lines, set it back to the joined item fvf
 	bdata.fvf = backup_fvf;
@@ -2436,7 +2509,7 @@ PREAMBLE(void)::render_joined_item_commands(const BItemJoined &p_bij, Rasterizer
 
 	// fill_state and bdata have once off setup per joined item, and a smaller reset on flush
 	FillState fill_state;
-	fill_state.reset_joined_item(p_bij.use_hardware_transform());
+	fill_state.reset_joined_item(p_bij.is_single_item(), p_bij.use_attrib_transform());
 
 	bdata.reset_joined_item();
 
@@ -2478,7 +2551,7 @@ PREAMBLE(void)::render_joined_item_commands(const BItemJoined &p_bij, Rasterizer
 
 		// decide the initial transform mode, and make a backup
 		// in orig_transform_mode in case we need to switch back
-		if (!fill_state.use_hardware_transform) {
+		if (fill_state.use_software_transform) {
 			fill_state.transform_mode = _find_transform_mode(fill_state.transform_combined);
 		} else {
 			fill_state.transform_mode = TM_NONE;
@@ -2517,15 +2590,14 @@ PREAMBLE(void)::_legacy_canvas_item_render_commands(RasterizerCanvas::Item *p_it
 
 	int command_count = p_item->commands.size();
 
-	RasterizerCanvas::Item::Command *const *commands = p_item->commands.ptr();
-
 	// legacy .. just create one massive batch and render everything as before
 	bdata.batches.reset();
 	Batch *batch = _batch_request_new();
 	batch->type = RasterizerStorageCommon::BT_DEFAULT;
 	batch->num_commands = command_count;
+	batch->item = p_item;
 
-	get_this()->render_batches(commands, p_current_clip, r_reclip, p_material);
+	get_this()->render_batches(p_current_clip, r_reclip, p_material);
 	bdata.reset_flush();
 }
 
@@ -2609,6 +2681,9 @@ PREAMBLE(void)::join_sorted_items() {
 			BItemRef *r = bdata.item_refs.request_with_grow();
 			r->item = ci;
 			r->final_modulate = _render_item_state.final_modulate;
+
+			// joined item references may introduce new flags
+			_render_item_state.joined_item->flags |= bdata.joined_item_batch_flags;
 		}
 
 	} // for s through sort items
