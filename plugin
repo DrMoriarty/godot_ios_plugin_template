@@ -100,12 +100,12 @@ void {cpp_plname}_deinit();
 
 PluginExample *plugin;
 
-void godot_plugin_init() {
+void """+cpp_plname+"""_init() {
     plugin = memnew(PluginExample);
     Engine::get_singleton()->add_singleton(Engine::Singleton(\""""+display_name+"""\", plugin));
 }
 
-void godot_plugin_deinit() {
+void """+cpp_plname+"""_deinit() {
    if (plugin) {
        memdelete(plugin);
    }
@@ -235,7 +235,7 @@ def store_new_method(ret_type, method_name, args, use_swift):
             for l in lines:
                 f.write(l + '\n')
                 if l == 'public:':
-                    f.write(f'    {ret_type} {method_name} (' + ', '.join(inputs) + ');')
+                    f.write(f'    {ret_type} {method_name} (' + ', '.join(inputs) + ');\n')
                     completed = True
         if not completed:
             print_error('Can not process header')
