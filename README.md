@@ -1,7 +1,7 @@
 # Godot iOS Plugin template
 
 This repo contains a *starter* Xcode configuration to build Godot plugin for iOS and publish it in NativeLib repo.
-Xcode project allows to build static `.a` libraries, that could be used with `.gdip` file as Godot's plugin to include platform functionality into exported application.
+Xcode project allows to build `.xcframework` libraries, that could be used with `.gdip` file as Godot's plugin to include platform functionality into exported application.
 
 # Initial setup
 
@@ -16,7 +16,7 @@ Note: To run this script you should have python installed in your system. All Ma
 Script usage is very simple:
 ![2021-03-15-120654](https://user-images.githubusercontent.com/1177068/111130490-526f3b80-8588-11eb-968a-fee67c1ba5a1.gif)
 
-The script generates all needed files to compile and publish your plugin with new name. Additionaly you may want to edit generated `nativelib.json` and set you (author) name, URL of your repository plugin's description and so on.
+The script generates all needed files to compile and publish your plugin with new name. Additionaly you may want to edit generated `nativelib.json` and set your (author) name, URL of your repository plugin's description and so on.
 
 This is example of `nativelib.json` file with all necessary fields:
 ```
