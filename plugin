@@ -8,6 +8,7 @@ if sys.version_info[0] >= 3:
 else:
     reload(sys)
     sys.setdefaultencoding('utf8')
+    input = raw_input
 
 class bcolors:
     HEADER = '\033[95m'
@@ -72,7 +73,7 @@ def replace_template(filename, template, value):
         print_error(e)
 
 def store_plugin_name(plname, cpp_plname, display_name):
-    gdip = f"""
+    gdip = """
 [config]
 name="{display_name}"
 binary="{plname}.xcframework"
@@ -86,11 +87,12 @@ system=[]
 capabilities=[]
 files=[]
 [plist]
-"""
-    cpp_header = f"""
+""".format(display_name=display_name, plname=plname, cpp_plname=cpp_plname)
+
+    cpp_header = """
 void {cpp_plname}_init();
 void {cpp_plname}_deinit();
-"""
+""".format(cpp_plname=cpp_plname)
 
     cpp_body = """
 #import <Foundation/Foundation.h>
@@ -128,9 +130,9 @@ void """+cpp_plname+"""_deinit() {
         },
         "platform_ios": {
             "files": {
-                f"bin/{plname}.debug.xcframework": f"ios/plugins/{plname}/{plname}.debug.xcframework",
-                f"bin/{plname}.release.xcframework": f"ios/plugins/{plname}/{plname}.release.xcframework",
-                f"{plname}.gdip": f"ios/plugins/{plname}/"
+                "bin/{plname}.debug.xcframework".format(plname=plname): "ios/plugins/{plname}/{plname}.debug.xcframework".format(plname=plname),
+                "bin/{plname}.release.xcframework".format(plname=plname): "ios/plugins/{plname}/{plname}.release.xcframework".format(plname=plname),
+                "{plname}.gdip".format(plname=plname): "ios/plugins/{plname}/".format(plname=plname)
             }
         }
     }
@@ -138,19 +140,27 @@ void """+cpp_plname+"""_deinit() {
         f.write(cpp_header)
     with open('godot_plugin/godot_plugin.mm', 'w') as f:
         f.write(cpp_body)
-    with open(f'{plname}.gdip', 'w') as f:
+    with open(plname+'.gdip', 'w') as f:
         f.write(gdip)
     with open('nativelib.json', 'w') as f:
         json.dump(meta, f, indent = 2)
     try:
+        pr_str = file_text('godot_plugin/godot_plugin_class.h')
+        lines = pr_str.split('\n')
+        with open('godot_plugin/godot_plugin_class.h', 'w') as f:
+            for l in lines:
+                if l.startswith('    GDCLASS'):
+                    f.write('    GDCLASS('+display_name+', Object);\n')
+                else:
+                    f.write(l + '\n')
         pr_str = file_text('generate_static_library.sh')
         lines = pr_str.split('\n')
         with open('generate_static_library.sh', 'w') as f:
             for l in lines:
                 if l.startswith('OUT='):
-                    f.write(f'OUT={plname}\n')
+                    f.write('OUT='+plname+'\n')
                 elif l.startswith('CLASS='):
-                    f.write(f'CLASS={display_name}\n')
+                    f.write('CLASS='+display_name+'\n')
                 else:
                     f.write(l + '\n')
     except IOError as e:
@@ -186,7 +196,7 @@ def store_new_method(ret_type, method_name, args, use_swift):
     swift_call = ''
     if use_swift:
         if len(swiftargs) > 0:
-            swift_call = f'[SwiftClass {method_name}With'
+            swift_call = '[SwiftClass '+method_name+'With'
             for sa in swiftargs:
                 if sa == swiftargs[0]:
                     swift_call += sa[1].upper() + ':' + sa[2] + ' ';
@@ -194,7 +204,7 @@ def store_new_method(ret_type, method_name, args, use_swift):
                     swift_call += sa[1] + ':' + sa[2] + ' ';
             swift_call += ']'
         else:
-            swift_call = f'[SwiftClass {method_name}]'
+            swift_call = '[SwiftClass '+method_name+']'
         swift_ret_type = ''
         if ret_type == 'void':
             swift_call += ';'
@@ -217,8 +227,8 @@ def store_new_method(ret_type, method_name, args, use_swift):
         sargs = []
         for sa in swiftargs:
             sargs.append(sa[1]+': '+sa[0])
-        swift_declaration = f"""
-    static func {method_name}(""" + ', '.join(sargs) + ") "+swift_ret_type+""" {
+        swift_declaration = """
+    static func """+method_name+"(" + ', '.join(sargs) + ") "+swift_ret_type+""" {
     }
 """
         swift_completed = False
@@ -238,9 +248,7 @@ def store_new_method(ret_type, method_name, args, use_swift):
             print_error('Can not process Swift class')
             cancel()
 
-    declaration = f"""
-{ret_type} PluginClass::{method_name}(""" + ', '.join(inputs) + """) {
-"""
+    declaration = "\n"+ret_type+" PluginClass::"+method_name+"(" + ', '.join(inputs) + ") {\n"
     completed = False
     try:
         pr_str = file_text('godot_plugin/godot_plugin_class.h')
@@ -249,7 +257,7 @@ def store_new_method(ret_type, method_name, args, use_swift):
             for l in lines:
                 f.write(l + '\n')
                 if l == 'public:':
-                    f.write(f'    {ret_type} {method_name} (' + ', '.join(inputs) + ');\n')
+                    f.write('    '+ret_type+' '+method_name+' (' + ', '.join(inputs) + ');\n')
                     completed = True
         if not completed:
             print_error('Can not process header')
@@ -260,7 +268,7 @@ def store_new_method(ret_type, method_name, args, use_swift):
             for l in lines:
                 f.write(l + '\n')
                 if l.startswith('void PluginClass::_bind_methods() {'):
-                    f.write(f'    ClassDB::bind_method(D_METHOD("{method_name}"), &PluginClass::{method_name});\n')
+                    f.write('    ClassDB::bind_method(D_METHOD("'+method_name+'"), &PluginClass::'+method_name+');\n')
             f.write(declaration)
             f.write('\n'.join(converts))
             if use_swift:
@@ -269,7 +277,7 @@ def store_new_method(ret_type, method_name, args, use_swift):
     except IOError as e:
         print_error(e)
         exit()
-    print(f'Generated new method: {ret_type} {method_name} (' + ', '.join(args) + ')')
+    print('Generated new method: '+ret_type+' '+method_name+' (' + ', '.join(args) + ')')
 
 def set_plugin_name():
     print_green('Enter new plugin name (use only letters, digits, dots and dash sign):')
@@ -286,8 +294,8 @@ def set_plugin_name():
             print_error('Plugin name should start with letter')
         if errors <= 0:
             break
-    print_bold(f'Using plugin name "{plname}"')
-    cpp_plname = plname.replace('-', '_')
+    print_bold('Using plugin name '+plname)
+    cpp_plname = plname.replace('-', '_').replace('.', '_')
     print_green('Enter singleton name (use only letters and digits):')
     print_debug('  example: DomainPluginName')
     print_debug('Or press enter to cancel operation')
@@ -302,7 +310,7 @@ def set_plugin_name():
             print_error('Singleton name should start with letter')
         if errors <= 0:
             break
-    print_bold(f'Using singleton name "{display_name}"')
+    print_bold('Using singleton name '+display_name)
     store_plugin_name(plname, cpp_plname, display_name)
 
 def input_cpp_type(include_void):
@@ -353,7 +361,7 @@ def add_new_method(use_swift):
     print_bold('Set input argument types')
     new_arg = ''
     while True:
-        print(f'Current method declaration: {ret_type} {method_name} (' + ', '.join(args) + ')')
+        print('Current method declaration: '+ret_type+' '+method_name+' (' + ', '.join(args) + ')')
         print_green('Select operation:')
         print_debug('Or press enter to cancel operation')
         print_bold(' 0: Finish method declaration')
