@@ -58,7 +58,7 @@ You can use script `plugin` many times to add more methods. But avoid editing ot
 
 # Plugin building
 
-When making changes in template you could build it in Xcode and check that all ok. When you are ready to make final build exit from Xcode and run `./generate_static_library.sh` in plugin template folder.
+When making changes in template you could build it running the script `./generate_static_library.sh` and check that all ok. (The plugin template don't designed to compile in pure Xcode.)
 
 It will make two libraries in `bin` folder: `godot_plugin.debug.xcframework` and `godot_plugin.release.xcframework`. Actually they both are release but one of them uses debug godot interface and will work with debug export.
 
